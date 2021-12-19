@@ -6,8 +6,11 @@ import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
 import ErrorOutlineIcon from "@mui/icons-material/ErrorOutline";
 import AddIcon from "@mui/icons-material/Add";
 import CircularProgress from "@mui/material/CircularProgress";
-
+import SettingsIcon from "@mui/icons-material/Settings";
+import CancelIcon from "@mui/icons-material/Cancel";
+import { Card } from "./card";
 const axios = require("axios");
+const link = "https://stocks-json-data.herokuapp.com/";
 
 export default function Stoks() {
   const [stockdata, setStockata] = useState([]);
@@ -16,12 +19,19 @@ export default function Stoks() {
   const [show, setShow] = useState([]);
   const [hover, setHover] = useState([]);
   const [watch, setWach] = useState(false);
+  const [card, setCard] = useState(false);
+  const [formet, setFormet] = useState(false);
+  const [sort, setSort] = useState(false);
+
   useEffect(() => {
     async function showData() {
       try {
         const { data } = await axios.get(
-          "http://localhost:3005/stocksData?list=true"
+          `${link}stocksData?list=true&_sort=companyName&_order=${
+            sort ? "asc" : "desc"
+          }`
         );
+
         setStockata(data);
         console.log(data);
       } catch (err) {
@@ -29,20 +39,23 @@ export default function Stoks() {
       }
     }
     showData();
-  }, [update]);
+  }, [update, sort]);
+
   async function showSearchData() {
     try {
       const { data } = await axios.get(
-        `http://localhost:3005/stocksData?q=${search}&_page=1&_limit=30`
+        `${link}stocksData?q=${search}&_page=1&_limit=30`
       );
       setShow(data);
+      setCard(false);
     } catch (err) {
       console.log(err);
     }
   }
+
   async function showUpdate(e) {
     try {
-      await axios.patch(`http://localhost:3005/stocksData/${e.id}`, {
+      await axios.patch(`${link}stocksData/${e.id}`, {
         list: e.list ? false : true,
       });
       await showSearchData();
@@ -51,13 +64,10 @@ export default function Stoks() {
       console.log(err);
     }
   }
-
+  console.log(formet);
   return (
     <div
       className="box"
-      onScroll={(p) => {
-        console.log("p", p);
-      }}
       onClick={(el) => {
         console.log(el.target.nodeName);
         if (el.target.nodeName !== "svg" && el.target.nodeName !== "INPUT") {
@@ -68,8 +78,26 @@ export default function Stoks() {
     >
       <div id="main-box">
         <div id="input">
-          <div> COUNT {stockdata.length}</div>
-          <h3>{watch ? "ADD WATHLIST..." : "YOUR WATHLIST "}</h3>
+          <div>
+            {" "}
+            {watch ? (
+              <></>
+            ) : card ? (
+              <CancelIcon
+                onClick={() => {
+                  setCard(!card);
+                }}
+              />
+            ) : (
+              <SettingsIcon
+                onClick={() => {
+                  setCard(!card);
+                }}
+              />
+            )}
+          </div>
+          <h3>{watch ? "ADD STOCKS..." : "YOUR WATHLIST "}</h3>
+          <h4>{stockdata.length}</h4>
           <input
             onChange={(e) => {
               setSearch(e.target.value);
@@ -83,14 +111,16 @@ export default function Stoks() {
                 showSearchData();
                 console.log(en.code);
               }
-              console.log(en.code, "o");
             }}
             type="text"
             placeholder="Search Stocks..."
             id=""
           />
         </div>
+
         <div style={{ width: "100%", height: "85px" }}></div>
+        <Card value={card} formet={setFormet} sort={sort} setsort={setSort} />
+
         <div>
           {watch
             ? show.map((el) => (
@@ -194,16 +224,17 @@ export default function Stoks() {
                   </div>
                   <div>{el.stockExchange}</div>
                   <div>
-                    {el.yesPrice - el.todayPrice < 0
+                    {formet
+                      ? (el.todayPrice - el.yesPrice).toFixed(0)
+                      : el.yesPrice - el.todayPrice < 0
                       ? (
                           ((el.todayPrice - el.yesPrice) / el.yesPrice) *
                           100
-                        ).toFixed(2)
+                        ).toFixed(2) + "  %"
                       : (
                           ((el.yesPrice - el.todayPrice) / el.yesPrice) *
                           100
-                        ).toFixed(2)}{" "}
-                    %
+                        ).toFixed(2) + "  %"}{" "}
                   </div>
                   {el.todayPrice < el.yesPrice ? (
                     <KeyboardArrowDownIcon
